@@ -1,69 +1,181 @@
 # Resumen del Proyecto: Financial Dashboard
 
-Presento a continuación el desglose técnico y funcional del proyecto **Financial Dashboard**.
+Este repositorio implementa un dashboard financiero full-stack con frontend en React + TypeScript y backend en FastAPI. El sistema genera/expone metricas financieras y las visualiza en una interfaz analitica con KPIs y graficas.
 
-## 🛠 Stack Tecnológico
+## Stack tecnologico (con evidencia)
 
-El proyecto utiliza un stack moderno y orientado al rendimiento, separando claramente el frontend del backend para facilitar la escalabilidad:
+Frontend:
+- React 19 + TypeScript + Vite 8
+- Tailwind CSS 4 + Recharts + Lucide
+- Vitest + ESLint
 
-**Frontend:**
-- **Core:** React 19, TypeScript
-- **Build Tool:** Vite 8
-- **Estilos y UI:** Tailwind CSS 4, Lucide React (iconos), utilidades de clases (`clsx`, `tailwind-merge`)
-- **Visualización de Datos:** Recharts
-- **Testing & Calidad:** Vitest, ESLint
+Evidencia en `frontend/package.json`:
 
-**Backend:**
-- **Core:** Python, FastAPI (Framework REST asíncrono y de alto rendimiento)
-- **Servidor:** Uvicorn (ASGI)
-- **Testing & Herramientas:** Pytest, HTTPX (para pruebas de cliente asíncrono), Debugpy (para debugging remoto)
+```json
+{
+	"scripts": {
+		"dev": "vite",
+		"build": "tsc -b && vite build",
+		"lint": "eslint .",
+		"test": "vitest run",
+		"test:coverage": "vitest run --coverage"
+	},
+	"dependencies": {
+		"react": "^19.2.4",
+		"recharts": "^3.8.1"
+	}
+}
+```
 
-**Infraestructura:**
-- **Contenedores:** Docker, Docker Compose
+Backend:
+- Python + FastAPI + Uvicorn
+- Pytest, pytest-cov, httpx, debugpy
 
----
+Evidencia en `backend/requirements.txt`:
 
-## 🎯 Qué hace el proyecto
+```txt
+fastapi
+uvicorn[standard]
+debugpy
+pytest
+pytest-cov
+httpx
+```
 
-Es una aplicación web full-stack diseñada para la visualización y análisis de **métricas financieras**. 
-El backend expone una API REST ("Financial Metrics API") que procesa y provee los datos de negocio. El frontend consume esta API para desplegar un **dashboard interactivo y analítico**, permitiendo a los usuarios monitorear KPIs (Key Performance Indicators), evaluar balances de ingresos frente a egresos, y visualizar márgenes o porcentajes de beneficio a través de gráficos enriquecidos.
+## Que hace el proyecto
 
----
+1. Exponer una API de metricas financieras con filtros.
+2. Entregar resumenes por periodo (dia/semana/mes), comparativas y alertas.
+3. Mostrar en frontend KPIs de ingreso/egreso/beneficio y graficas temporales.
 
-## 🏗 Arquitectura Funcional
+Evidencia backend en `backend/app/main.py`:
 
-El sistema sigue una **arquitectura cliente-servidor desacoplada y contenerizada**:
+```py
+app = FastAPI(title="Financial Metrics API")
+app.add_middleware(
+		CORSMiddleware,
+		allow_origins=["*"],
+		allow_credentials=True,
+		allow_methods=["*"],
+		allow_headers=["*"],
+)
+app.include_router(router)
+```
 
-- **API Gateway / Backend (Puerto 8000):** Basado en FastAPI, actúa como el motor de datos. Está configurado con middleware CORS para permitir el consumo seguro desde el cliente web. Incluye mapeo de puertos adicionales (5678) que habilita la conexión de un depurador externo (Debugpy).
-- **Cliente SPA (Puerto 5173):** Aplicación de página única (Single Page Application) modularizada. Gestiona el enrutamiento y estado local y se comunica vía HTTP (`fetch` o similares) hacia la API.
-- **Orquestación y Entorno Dev:** Todo está administrado por `docker-compose.yml`. Define la red interna, mapea volúmenes (ej. `./frontend:/app` y `./backend:/app`) para habilitar *hot-reload* instantáneo durante el desarrollo y establece la topología de inicio (el frontend espera a que el backend se levante mediante `depends_on`).
+## Arquitectura funcional
 
----
+Cliente-servidor desacoplado en dos servicios Docker:
 
-## 🖥 Interfaz
+Evidencia en `docker-compose.yml`:
 
-La interfaz está diseñada bajo un paradigma estricto basado en **componentes funcionales reutilizables**:
+```yml
+services:
+	frontend:
+		ports:
+			- "5173:5173"
+		depends_on:
+			- backend
 
-- **Componentización:** Estructura modular dividida en sub-componentes lógicos como `dashboard-header`, `kpi-card`, y `kpi-row`.
-- **Visualización Analítica:** Emplea `Recharts` para inyectar gráficos de alto impacto y reactivos (`income-outcome-chart`, `profit-percent-chart`).
-- **Sistema de Diseño (Design System):** Utiliza Tailwind CSS con utilidades de interpolación para crear una interfaz responsive y unificada. Se enfoca en la experiencia de usuario (UX) implementando estados de carga mediante esqueletos (`skeleton.tsx`).
+	backend:
+		ports:
+			- "8000:8000"
+			- "5678:5678"
+```
 
----
+Proxy de Vite hacia backend (sin configurar URL manual en local):
 
-## 🧪 Testing y Calidad
+Evidencia en `frontend/vite.config.ts`:
 
-El proyecto hace un fuerte énfasis en la fiabilidad del software mediante herramientas modernas de validación:
+```ts
+server: {
+	proxy: {
+		"/api": {
+			target: "http://backend:8000",
+			changeOrigin: true,
+		},
+	},
+}
+```
 
-- **Frontend:** Implementa **Vitest** con cobertura v8 (`vitest run --coverage`) para una ejecución de pruebas unitarias ultrarrápida. Garantiza la consistencia y detección temprana de errores mediante **TypeScript** (tipado estricto) y **ESLint** (análisis estático).
-- **Backend:** Emplea **Pytest** como framework de pruebas, apoyado por `pytest-cov` para asegurar y medir la cobertura de código (Test Coverage). `httpx` se utiliza para testear las rutas de FastAPI (`test_routes.py`) de forma robusta.
+## API y logica de negocio
 
----
+El backend define tipos de negocio (`income`, `outcome`, `B2B`, `B2C`) y genera datos mock reproducibles con `seed=42`.
 
-## 🚀 Cómo se ejecuta
+Evidencia en `backend/app/routes.py`:
 
-La aplicación está preparada para levantar todo el entorno con un solo comando gracias a la contenerización.
+```py
+OperationType = Literal["income", "outcome"]
+BusinessType = Literal["B2B", "B2C"]
 
-Desde la raíz del proyecto, ejecuta: 
+def generate_mock_movements(seed: int | None = None) -> list[FinancialMovement]:
+		if seed is not None:
+				random.seed(seed)
+		...
+
+@router.get("/api/metrics")
+@router.get("/api/metrics/facets")
+@router.get("/api/metrics/summary")
+@router.get("/api/metrics/categories/top")
+@router.get("/api/metrics/comparison")
+@router.get("/api/metrics/alerts")
+@router.get("/api/metrics/b2b")
+@router.get("/api/metrics/b2c")
+```
+
+## Frontend e interfaz
+
+El frontend consume `/api/metrics` y transforma los datos para pintar tarjetas KPI y dos graficas principales.
+
+Evidencia en `frontend/src/App.tsx`:
+
+```tsx
+async function fetchFinancialData(): Promise<FinancialMovement[]> {
+	const response = await fetch(`${API_BASE_URL}/api/metrics`);
+	...
+}
+
+fetchFinancialData()
+	.then((movements) => {
+		setMetrics(computeKPIs(movements));
+		setMonthlyData(computeMonthlyData(movements));
+	})
+```
+
+Componentes visuales relevantes en `frontend/src/components/dashboard/`:
+- `dashboard-header.tsx`
+- `kpi-row.tsx`
+- `income-outcome-chart.tsx`
+- `profit-percent-chart.tsx`
+
+## Testing y calidad (con evidencia)
+
+Backend (`backend/tests/test_routes.py`): valida salud, filtros, facets, summary, top categorias, comparison y alerts.
+
+```py
+def test_health_endpoint_returns_ok():
+		response = client.get("/health")
+		assert response.status_code == 200
+
+def test_top_categories_returns_limited_sorted_categories():
+		response = client.get("/api/metrics/categories/top", params={"operation_type": "outcome", "limit": 3})
+		assert response.status_code == 200
+```
+
+Frontend (`frontend/src/lib/financial-utils.test.ts`): valida calculos KPI, agregacion mensual y formateadores.
+
+```ts
+expect(metrics).toEqual({
+	totalIncome: 1500,
+	totalOutcome: 250,
+	profit: 1250,
+	profitPercent: (1250 / 1500) * 100,
+});
+```
+
+## Ejecucion
+
+Desde la raiz del proyecto:
+
 ```bash
 docker compose up --build
 ```
