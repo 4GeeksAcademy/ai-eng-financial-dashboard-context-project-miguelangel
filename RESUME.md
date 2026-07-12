@@ -1,6 +1,6 @@
 # Resumen del Proyecto: Financial Dashboard
 
-Este repositorio implementa un dashboard financiero full-stack con frontend en React + TypeScript y backend en FastAPI. El sistema genera/expone metricas financieras y las visualiza en una interfaz analitica con KPIs y graficas.
+Este repositorio implementa un dashboard financiero full-stack con frontend en React + TypeScript y backend en FastAPI . El sistema genera/expone metricas financieras y las visualiza en una interfaz analitica con KPIs y graficas.
 
 ## Stack tecnologico (con evidencia)
 
